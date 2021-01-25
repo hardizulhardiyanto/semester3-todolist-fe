@@ -22,7 +22,7 @@
             Tambah Kegiatan?
           </v-card-title>
           <v-card-text>
-            <v-form v-model="valid">
+            <v-form ref="form" v-model="valid">
               <v-text-field
                 v-model="form.nama_barang"
                 :rules="nameRules"
@@ -34,11 +34,14 @@
           </v-card-text>
           <v-card-actions>
             <v-spacer></v-spacer>
-            <v-btn color="green darken-1" text @click="dialog = false">
-              Disagree
-            </v-btn>
-            <v-btn color="green darken-1" text @click="dialog = false">
-              Agree
+            <v-btn color="error" text @click="dialog = false"> Cancel </v-btn>
+            <v-btn
+              color="green darken-1"
+              text
+              @click="fetchAddData()"
+              :disabled="!valid"
+            >
+              I Accept
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -48,6 +51,7 @@
       :headers="headers"
       :items="listKegiatan"
       sort-by="id"
+      :sort-desc="true"
       class="elevation-1"
     >
       <template v-slot:top>
@@ -65,9 +69,6 @@
         <v-icon small class="mr-2" @click="editItem(item)"> mdi-pencil </v-icon>
         <v-icon small @click="deleteItem(item)"> mdi-delete </v-icon>
       </template>
-      <template v-slot:no-data>
-        <v-btn color="primary" @click="initialize"> Reset </v-btn>
-      </template>
     </v-data-table>
   </v-container>
 </template>
@@ -79,13 +80,13 @@ export default {
     listKegiatan: [],
     dialog: false,
     form: {},
-    valid: false,
+    valid: true,
     nameRules: [
-      (v) => !!v || "Name is required",
-      (v) => v.length <= 10 || "Name must be less than 10 characters",
+      (v) => !!v || "Nama Kegiatan is required",
+      (v) => (v && v.length <= 10) || "Nama Kegiatan must be less than 10 characters"
     ],
 
-    dialogDelete: false,
+
     headers: [
       {
         text: "ID List",
@@ -96,165 +97,50 @@ export default {
       {
         text: "Nama Kegiatan",
         value: "nama_barang",
-        align: "center",
+        align: "start",
         sortable: true,
       },
 
       { text: "Actions", value: "actions", sortable: false },
     ],
-    desserts: [],
-    editedIndex: -1,
-    editedItem: {
-      name: "",
-      calories: 0,
-      fat: 0,
-      carbs: 0,
-      protein: 0,
-    },
-    defaultItem: {
-      name: "",
-      calories: 0,
-      fat: 0,
-      carbs: 0,
-      protein: 0,
-    },
+    
   }),
-
-  computed: {
-    formTitle() {
-      return this.editedIndex === -1 ? "New Item" : "Edit Item";
-    },
-  },
 
   watch: {
     dialog(val) {
       val || this.close();
     },
-    dialogDelete(val) {
-      val || this.closeDelete();
-    },
   },
 
   created() {
-    this.initialize();
+    this.fetchAllData();
   },
 
   methods: {
-    initialize() {
-      this.desserts = [
-        {
-          name: "Frozen Yogurt",
-          calories: 159,
-          fat: 6.0,
-          carbs: 24,
-          protein: 4.0,
-        },
-        {
-          name: "Ice cream sandwich",
-          calories: 237,
-          fat: 9.0,
-          carbs: 37,
-          protein: 4.3,
-        },
-        {
-          name: "Eclair",
-          calories: 262,
-          fat: 16.0,
-          carbs: 23,
-          protein: 6.0,
-        },
-        {
-          name: "Cupcake",
-          calories: 305,
-          fat: 3.7,
-          carbs: 67,
-          protein: 4.3,
-        },
-        {
-          name: "Gingerbread",
-          calories: 356,
-          fat: 16.0,
-          carbs: 49,
-          protein: 3.9,
-        },
-        {
-          name: "Jelly bean",
-          calories: 375,
-          fat: 0.0,
-          carbs: 94,
-          protein: 0.0,
-        },
-        {
-          name: "Lollipop",
-          calories: 392,
-          fat: 0.2,
-          carbs: 98,
-          protein: 0,
-        },
-        {
-          name: "Honeycomb",
-          calories: 408,
-          fat: 3.2,
-          carbs: 87,
-          protein: 6.5,
-        },
-        {
-          name: "Donut",
-          calories: 452,
-          fat: 25.0,
-          carbs: 51,
-          protein: 4.9,
-        },
-        {
-          name: "KitKat",
-          calories: 518,
-          fat: 26.0,
-          carbs: 65,
-          protein: 7,
-        },
-      ];
+    fetchAllData() {
+      this.$store.dispatch('todos/fetchAllTodo')
+      .then((data) => {
+        this.listKegiatan = data.data
+      })
+      .catch((error) => {
+        console.log("ERROR GET ALL", error);
+      })
     },
 
-    editItem(item) {
-      this.editedIndex = this.desserts.indexOf(item);
-      this.editedItem = Object.assign({}, item);
-      this.dialog = true;
-    },
-
-    deleteItem(item) {
-      this.editedIndex = this.desserts.indexOf(item);
-      this.editedItem = Object.assign({}, item);
-      this.dialogDelete = true;
-    },
-
-    deleteItemConfirm() {
-      this.desserts.splice(this.editedIndex, 1);
-      this.closeDelete();
+    fetchAddData() {
+      this.$store.dispatch('todos/fetchAddTodo', this.form)
+      .then((data) => {
+        this.fetchAllData()
+        this.close()
+      })
+      .catch((error) => {
+        console.log("ERROR GET ALL", error);
+      })
     },
 
     close() {
       this.dialog = false;
-      this.$nextTick(() => {
-        this.editedItem = Object.assign({}, this.defaultItem);
-        this.editedIndex = -1;
-      });
-    },
-
-    closeDelete() {
-      this.dialogDelete = false;
-      this.$nextTick(() => {
-        this.editedItem = Object.assign({}, this.defaultItem);
-        this.editedIndex = -1;
-      });
-    },
-
-    save() {
-      if (this.editedIndex > -1) {
-        Object.assign(this.desserts[this.editedIndex], this.editedItem);
-      } else {
-        this.desserts.push(this.editedItem);
-      }
-      this.close();
+      this.form = {}
     },
   },
 };

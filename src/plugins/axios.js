@@ -10,7 +10,7 @@ const _axios = axios.create(config)
 Plugin.install = function (Vue) {
     Vue.axios = _axios
     window.axios = _axios
-    Object.defineProperty(Vue.prototype, {
+    Object.defineProperties(Vue.prototype, {
         axios: {
             get() {
                 return _axios;
